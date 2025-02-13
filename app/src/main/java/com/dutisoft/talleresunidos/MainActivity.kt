@@ -1,10 +1,12 @@
 package com.dutisoft.talleresunidos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,7 +26,6 @@ import androidx.compose.material.icons.filled.Add
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import kotlin.random.Random
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,13 +43,20 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    TalleresScreen(modifier = Modifier.padding(innerPadding))
+                    TalleresScreen(modifier = Modifier.padding(innerPadding)) { taller ->
+                        val intent = Intent(this, TallerInfoActivity::class.java).apply {
+                            putExtra("nombre", taller.nombre)
+                            putExtra("direccion", taller.direccion)
+                            putExtra("numRefacciones", taller.numRefacciones)
+                            putExtra("imageUrl", taller.imageUrl)
+                        }
+                        startActivity(intent)
+                    }
                 }
             }
         }
     }
 }
-
 data class Taller(val nombre: String, val direccion: String, val numRefacciones: Int, val imageUrl: String)
 
 fun generarTalleres(): List<Taller> {
@@ -75,12 +83,12 @@ fun generarTalleres(): List<Taller> {
     )
     return nombres.zip(direcciones).zip(imagenes).map { (data, imageUrl) ->
         val (nombre, direccion) = data
-        Taller(nombre, direccion, Random.nextInt(10, 100), imageUrl)
+        Taller(nombre, direccion, Random.nextInt(1, 10), imageUrl)
     }
 }
 
 @Composable
-fun TalleresScreen(modifier: Modifier = Modifier) {
+fun TalleresScreen(modifier: Modifier = Modifier, onTallerClick: (Taller) -> Unit) {
     Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "Talleres Unidos",
@@ -89,17 +97,20 @@ fun TalleresScreen(modifier: Modifier = Modifier) {
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(generarTalleres()) { taller ->
-                TallerItem(taller)
+                TallerItem(taller, onTallerClick)
             }
         }
     }
 }
 
 @Composable
-fun TallerItem(taller: Taller) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .padding(8.dp)) {
+fun TallerItem(taller: Taller, onClick: (Taller) -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable { onClick(taller) }
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = taller.nombre, fontSize = 18.sp, style = MaterialTheme.typography.headlineMedium)
@@ -116,10 +127,4 @@ fun TallerItem(taller: Taller) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun TalleresScreenPreview() {
-    TalleresUnidosTheme {
-        TalleresScreen()
-    }
-}
+
