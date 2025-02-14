@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -117,6 +119,19 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
 @Composable
 fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = null) {
+    val refacciones = listOf(
+        "Filtro de aire",
+        "Pastillas de freno",
+        "Batería",
+        "Aceite de motor",
+        "Bujías",
+        "Amortiguadores",
+        "Correa de distribución",
+        "Radiador",
+        "Alternador",
+        "Lámparas de faro"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -140,6 +155,23 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
+
+        // Filtrar la lista de refacciones basado en el input
+        val refaccionesFiltradas = refacciones.filter { it.contains(pieza, ignoreCase = true) }
+
+        // Mostrar los resultados filtrados
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(refaccionesFiltradas) { refaccion ->
+                Text(
+                    text = refaccion,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
 
         // Nombre del taller
         Text(
