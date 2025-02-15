@@ -40,8 +40,8 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -283,7 +283,9 @@ fun SolicitarRefaccionScreen(
         )
     }
 
+    // Corrección: se utiliza rememberMarkerState para el marcador del mapa
     val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
+    val markerState = rememberMarkerState(position = markerPosition)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
     }
@@ -325,7 +327,7 @@ fun SolicitarRefaccionScreen(
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = nombreTaller, fontSize = 18.sp)
+            Text(text = nombreTaller, fontSize = 22.sp)
         }
         // Fila para la fecha (sólo icono y valor)
         Row(
@@ -361,7 +363,7 @@ fun SolicitarRefaccionScreen(
             cameraPositionState = cameraPositionState
         ) {
             Marker(
-                state = MarkerState(position = markerPosition),
+                state = markerState,
                 title = "Ubicación actual",
                 snippet = "Estás aquí"
             )
