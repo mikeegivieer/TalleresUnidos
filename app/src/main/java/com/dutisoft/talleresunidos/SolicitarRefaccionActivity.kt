@@ -14,9 +14,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,7 +94,7 @@ class SolicitarRefaccionActivity : ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
-                    // Pasar también la dirección al composable
+                    // Se pasa también la dirección al composable
                     SolicitarRefaccionScreen(
                         nombreTaller = nombreTaller,
                         direccion = direccion,
@@ -215,21 +217,18 @@ fun SolicitarRefaccionScreen(
     var active by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var showTallerDialog by remember { mutableStateOf(false) }
-    // Variable para guardar el nombre del taller encontrado
     var tallerEncontrado by remember { mutableStateOf("") }
 
     val refaccionesFiltradas = remember(searchQuery) {
         refacciones.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
-    // Se muestra el diálogo si se presionó "Enter" y no se encontraron coincidencias
     LaunchedEffect(key1 = active, key2 = searchQuery) {
         if (!active && searchQuery.isNotBlank() && refaccionesFiltradas.isEmpty()) {
             showConfirmDialog = true
         }
     }
 
-    // Primer diálogo: preguntar si se desea comprobar disponibilidad en otros talleres
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
@@ -238,16 +237,13 @@ fun SolicitarRefaccionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showConfirmDialog = false
-                    // Buscar la refacción en la lista de disponibles
                     val foundIndex = refaccionesDisponibles.indexOfFirst { it.equals(searchQuery, ignoreCase = true) }
                     if (foundIndex != -1) {
-                        // Usamos 1-indexación para determinar la posición
                         val piezaPos = foundIndex + 1
-                        // Buscar el primer taller que tenga refacciones disponibles
                         val taller = TallerRepository.talleres.firstOrNull { piezaPos <= it.numRefacciones }
                         if (taller != null) {
                             tallerEncontrado = taller.nombre
-                            showTallerDialog = true // Mostrar el diálogo con el nombre del taller
+                            showTallerDialog = true
                         }
                     }
                 }) {
@@ -262,7 +258,6 @@ fun SolicitarRefaccionScreen(
         )
     }
 
-    // Segundo diálogo: muestra el nombre del taller en negrita y botón "Solicitar pieza"
     if (showTallerDialog) {
         AlertDialog(
             onDismissRequest = { showTallerDialog = false },
@@ -288,9 +283,6 @@ fun SolicitarRefaccionScreen(
         )
     }
 
-    // Reordenación de vistas:
-    // Primero: SearchBar, luego el nombre del taller, la fecha, la dirección, el mapa,
-    // el menú para el estado, el botón para tomar foto y, al final, el botón inferior "Solicitar"
     val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
@@ -299,10 +291,10 @@ fun SolicitarRefaccionScreen(
 
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // SearchBar para buscar refacciones
+        // SearchBar
         SearchBar(
             query = searchQuery,
             onQueryChange = {
@@ -319,52 +311,48 @@ fun SolicitarRefaccionScreen(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Buscar"
                 )
-            }
+            },
+            content = {}
+        )
+        // Fila para el nombre del taller (sólo icono y valor)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 200.dp)
-            ) {
-                if (searchQuery.isNotEmpty() && refaccionesFiltradas.isNotEmpty()) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(refaccionesFiltradas) { refaccion ->
-                            Text(
-                                text = refaccion,
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        searchQuery = refaccion
-                                        active = false
-                                    }
-                                    .padding(8.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.Work,
+                contentDescription = "Taller",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = nombreTaller, fontSize = 18.sp)
         }
-        // Mayor espacio entre la SearchBar y el nombre del taller
-        Spacer(modifier = Modifier.height(32.dp))
-        // Nombre del taller
-        Text(
-            text = "Taller: $nombreTaller",
-            fontSize = 18.sp
-        )
-        // Fecha actual
-        Text(
-            text = "Fecha: $fechaActual",
-            fontSize = 18.sp
-        )
-        // Dirección (tomada del intent)
-        Text(
-            text = "Direccion: $direccion",
-            fontSize = 18.sp
-        )
+        // Fila para la fecha (sólo icono y valor)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.CalendarToday,
+                contentDescription = "Fecha",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = fechaActual, fontSize = 18.sp)
+        }
+        // Fila para la dirección (sólo icono y valor)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "Dirección",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = direccion, fontSize = 18.sp)
+        }
         // Mapa con la ubicación
         GoogleMap(
             modifier = Modifier
@@ -411,9 +399,9 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
-        // Botón para tomar foto de evidencia con icono de cámara
+        // Botón para tomar foto de evidencia con ícono de cámara
         Button(
-            onClick = { /* Lógica para tomar una foto de evidencia */ },
+            onClick = { /* Lógica para tomar foto de evidencia */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
