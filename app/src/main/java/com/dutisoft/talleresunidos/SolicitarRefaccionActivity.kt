@@ -1,13 +1,12 @@
 package com.dutisoft.talleresunidos
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +19,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
@@ -36,14 +40,12 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 class SolicitarRefaccionActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-
-    // Estado mutable para almacenar la ubicación actual
     private val ubicacionActualState = mutableStateOf<LatLng?>(null)
 
-    // Solicitud de permisos
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -55,7 +57,7 @@ class SolicitarRefaccionActivity : ComponentActivity() {
                 obtenerUbicacionActual()
             }
             else -> {
-                // Permiso denegado, manejar el caso según se requiera
+                // Permiso denegado
             }
         }
     }
@@ -66,10 +68,8 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Obtén el nombre del taller del intent
         val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
 
-        // Configura la UI una sola vez con un TopAppBar que incluye la flecha de retroceso
         setContent {
             TalleresUnidosTheme {
                 Scaffold(
@@ -99,7 +99,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
             }
         }
 
-        // Solicitar permisos o, si ya están concedidos, obtener la ubicación
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -143,60 +142,139 @@ fun SolicitarRefaccionScreen(
     ubicacionActual: LatLng? = null,
     modifier: Modifier = Modifier
 ) {
-    // Lista de refacciones
+    val context = LocalContext.current
+
+    // Lista de refacciones de motor para autocompletar
     val refacciones = listOf(
-        "Filtro de aire",
-        "Pastillas de freno",
-        "Batería",
-        "Aceite de motor",
-        "Bujías",
-        "Amortiguadores",
-        "Correa de distribución",
-        "Radiador",
-        "Alternador",
-        "Lámparas de faro",
-        "Motor de arranque",
-        "Bujías de encendido",
-        "Inyector de combustible",
-        "Filtro de combustible",
-        "Filtro de aceite",
-        "Filtro de cabina",
-        "Escobillas de limpiaparabrisas",
-        "Pastillas de freno traseras",
-        "Discos de freno",
-        "Termostato"
+        "Bloque del motor",
+        "Culata de cilindros",
+        "Árbol de levas",
+        "Cigueñal",
+        "Pistones forjados",
+        "Bielas reforzadas",
+        "Bomba de aceite",
+        "Bomba de agua",
+        "Carter del motor",
+        "Intercooler",
+        "Turbo compresor",
+        "Supercargador",
+        "Sistema de inyección electrónica",
+        "Cámara de combustión",
+        "Junta de culata",
+        "Culata del motor",
+        "Válvula de admisión",
+        "Válvula de escape",
+        "Muelles de válvula",
+        "Guías de válvula",
+        "Tapa de árbol de levas",
+        "Cojinetes del cigueñal",
+        "Sistema de lubricación",
+        "Carter de aceite",
+        "Bomba de combustible eléctrica",
+        "Regulador de presión de combustible",
+        "Sensor de oxígeno",
+        "Sensor de temperatura del motor",
+        "Sensor de presión del aceite",
+        "Módulo ECU",
+        "Cuerpo de acelerador",
+        "Sensor de posición del cigüeñal",
+        "Sensor de detonación",
+        "Inyector de alta presión",
+        "Boquilla de inyección",
+        "Radiador de aceite",
+        "Ventilador del motor",
+        "Sistema de escape completo",
+        "Catalizador",
+        "Silenciador",
+        "Tubo de escape",
+        "Colector de escape",
+        "Sensor de velocidad del motor",
+        "Módulo de encendido",
+        "Bobina de encendido",
+        "Distribuidor de encendido",
+        "Conjunto de juntas del motor",
+        "Sistema de admisión de aire",
+        "Tapa de motor"
+    )
+
+    // Lista de refacciones disponibles a buscar
+    val refaccionesDisponibles = listOf(
+        "Filtro de aire", "Pastillas de freno", "Bateria", "Aceite de motor", "Bujias",
+        "Amortiguadores", "Correa de distribucion", "Radiador", "Alternador", "Lamparas de faro"
     )
 
     var searchQuery by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var showTallerDialog by remember { mutableStateOf(false) }
+    // Variable para guardar el nombre del taller encontrado
+    var tallerEncontrado by remember { mutableStateOf("") }
+
     val refaccionesFiltradas = remember(searchQuery) {
         refacciones.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
-    // Cuando se presiona enter (onSearch) y no hay resultados (y el query no está vacío), se muestra el diálogo.
+    // Se muestra el diálogo si se presionó "Enter" y no se encontraron coincidencias
     LaunchedEffect(key1 = active, key2 = searchQuery) {
         if (!active && searchQuery.isNotBlank() && refaccionesFiltradas.isEmpty()) {
-            showDialog = true
+            showConfirmDialog = true
         }
     }
 
-    if (showDialog) {
+    // Primer diálogo: preguntar si se desea comprobar disponibilidad en otros talleres
+    if (showConfirmDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showConfirmDialog = false },
             title = { Text("No disponible") },
             text = { Text("¿Desea comprobar disponibilidad entre talleres?") },
             confirmButton = {
                 TextButton(onClick = {
-                    showDialog = false
-                    // Aquí puedes agregar la acción para comprobar el stock
+                    showConfirmDialog = false
+                    // Buscar la refacción en la lista de disponibles
+                    val foundIndex = refaccionesDisponibles.indexOfFirst { it.equals(searchQuery, ignoreCase = true) }
+                    if (foundIndex != -1) {
+                        // Usamos 1-indexación para determinar la posición
+                        val piezaPos = foundIndex + 1
+                        // Buscar el primer taller que tenga refacciones disponibles
+                        val taller = TallerRepository.talleres.firstOrNull { piezaPos <= it.numRefacciones }
+                        if (taller != null) {
+                            tallerEncontrado = taller.nombre
+                            showTallerDialog = true // Mostrar el diálogo con el nombre del taller
+                        }
+                    }
                 }) {
                     Text("Sí")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
+                TextButton(onClick = { showConfirmDialog = false }) {
                     Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Segundo diálogo: muestra el nombre del taller con el nombre en negrita y botón "Solicitar pieza"
+    if (showTallerDialog) {
+        AlertDialog(
+            onDismissRequest = { showTallerDialog = false },
+            title = { Text("Pieza disponible") },
+            text = {
+                Text(
+                    buildAnnotatedString {
+                        append("Pieza disponible en: ")
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append(tallerEncontrado)
+                        }
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    Toast.makeText(context, "Solicitud realizada con éxito", Toast.LENGTH_SHORT).show()
+                    showTallerDialog = false
+                }) {
+                    Text("Solicitar pieza")
                 }
             }
         )
@@ -240,7 +318,6 @@ fun SolicitarRefaccionScreen(
                             Text(
                                 text = refaccion,
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
@@ -255,11 +332,9 @@ fun SolicitarRefaccionScreen(
             }
         }
 
-        // Información del taller
         Text(
             text = "Taller: $nombreTaller",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onBackground
+            fontSize = 18.sp
         )
 
         val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
@@ -267,7 +342,6 @@ fun SolicitarRefaccionScreen(
             position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
         }
 
-        // Muestra el mapa con un marcador que indica la ubicación actual (o por defecto)
         GoogleMap(
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,8 +360,7 @@ fun SolicitarRefaccionScreen(
         }
         Text(
             text = "Fecha: $fechaActual",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onBackground
+            fontSize = 18.sp
         )
 
         var estado by remember { mutableStateOf("") }
@@ -300,7 +373,7 @@ fun SolicitarRefaccionScreen(
         )
 
         Button(
-            onClick = { /* Lógica para tomar una foto */ },
+            onClick = { /* Lógica para tomar una foto de evidencia */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)

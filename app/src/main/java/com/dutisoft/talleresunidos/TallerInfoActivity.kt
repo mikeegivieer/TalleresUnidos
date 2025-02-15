@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
-import kotlin.random.Random
 
 class TallerInfoActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +38,7 @@ class TallerInfoActivity : ComponentActivity() {
                 val direccion = intent.getStringExtra("direccion") ?: "Dirección no disponible"
                 val numRefacciones = intent.getIntExtra("numRefacciones", 0)
                 val imageUrl = intent.getStringExtra("imageUrl") ?: ""
-                val refacciones = generarRefaccionesAleatorias(numRefacciones)
+                val refacciones = generarRefacciones(numRefacciones)
                 val context = LocalContext.current
 
                 Scaffold(
@@ -134,13 +132,13 @@ class TallerInfoActivity : ComponentActivity() {
         }
     }
 
-    private fun generarRefaccionesAleatorias(numRefacciones: Int): List<String> {
+    private fun generarRefacciones(numRefacciones: Int): List<String> {
         val refaccionesDisponibles = listOf(
             "Filtro de aire", "Pastillas de freno", "Batería", "Aceite de motor", "Bujías",
             "Amortiguadores", "Correa de distribución", "Radiador", "Alternador", "Lámparas de faro"
         )
         return List(numRefacciones) {
-            refaccionesDisponibles[Random.nextInt(refaccionesDisponibles.size)]
+            refaccionesDisponibles[it]
         }
     }
 }

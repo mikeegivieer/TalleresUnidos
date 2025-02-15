@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.material3.CenterAlignedTopAppBar
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
 import kotlin.random.Random
 
+// Data class para representar un taller
 data class Taller(
     val nombre: String,
     val direccion: String,
@@ -34,6 +37,7 @@ data class Taller(
     val imageUrl: String
 )
 
+// Función que genera la lista de talleres
 fun generarTalleres(): List<Taller> {
     val nombres = listOf(
         "Mecánica Rápida Express",
@@ -62,14 +66,24 @@ fun generarTalleres(): List<Taller> {
     }
 }
 
+// Repositorio global de talleres
+object TallerRepository {
+    val talleres: List<Taller> by lazy { generarTalleres() }
+}
+
 @Composable
-fun TalleresScreen(modifier: Modifier = Modifier, onTallerClick: (Taller) -> Unit) {
+fun TalleresScreen(
+    modifier: Modifier = Modifier,
+    onTallerClick: (Taller) -> Unit
+) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(generarTalleres()) { taller ->
-            TallerItem(taller, onTallerClick)
+        items(TallerRepository.talleres) { taller ->
+            TallerItem(taller) {
+                onTallerClick(it)
+            }
         }
     }
 }
@@ -107,7 +121,6 @@ fun TallerItem(taller: Taller, onClick: (Taller) -> Unit) {
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            // Imagen del taller con forma circular
             Image(
                 painter = rememberAsyncImagePainter(taller.imageUrl),
                 contentDescription = "Logo del taller",
@@ -140,6 +153,7 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding)
                             .padding(horizontal = 16.dp)
                     ) { taller ->
+                        // Creamos el intent sin pasar la lista, pues ésta se obtiene globalmente.
                         val intent = Intent(this, TallerInfoActivity::class.java).apply {
                             putExtra("nombre", taller.nombre)
                             putExtra("direccion", taller.direccion)
