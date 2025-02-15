@@ -84,17 +84,17 @@ class TallerInfoActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Logo del taller, ahora circular
+                        // Logo del taller, mostrado en forma circular
                         Image(
                             painter = rememberAsyncImagePainter(imageUrl),
                             contentDescription = "Logo del taller",
                             modifier = Modifier
                                 .size(128.dp)
-                                .clip(CircleShape)
+                                .clip(CircleShape)  // Aquí se recorta la imagen en forma circular
                                 .padding(4.dp),
                             contentScale = ContentScale.Crop
                         )
-                        // Nombre del taller (ahora debajo de la imagen)
+                        // Nombre del taller debajo de la imagen
                         Text(
                             text = nombre,
                             style = MaterialTheme.typography.headlineMedium,

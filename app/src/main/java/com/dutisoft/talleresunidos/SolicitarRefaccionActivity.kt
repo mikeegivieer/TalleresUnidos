@@ -77,7 +77,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
                         CenterAlignedTopAppBar(
                             title = { Text("Solicitar Refacción") },
                             navigationIcon = {
-                                // Usamos LocalActivity en lugar de convertir el contexto
                                 val activity = LocalActivity.current
                                 IconButton(onClick = { activity?.finish() }) {
                                     Icon(
@@ -155,13 +154,52 @@ fun SolicitarRefaccionScreen(
         "Correa de distribución",
         "Radiador",
         "Alternador",
-        "Lámparas de faro"
+        "Lámparas de faro",
+        "Motor de arranque",
+        "Bujías de encendido",
+        "Inyector de combustible",
+        "Filtro de combustible",
+        "Filtro de aceite",
+        "Filtro de cabina",
+        "Escobillas de limpiaparabrisas",
+        "Pastillas de freno traseras",
+        "Discos de freno",
+        "Termostato"
     )
 
     var searchQuery by remember { mutableStateOf("") }
     var active by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
     val refaccionesFiltradas = remember(searchQuery) {
         refacciones.filter { it.contains(searchQuery, ignoreCase = true) }
+    }
+
+    // Cuando se presiona enter (onSearch) y no hay resultados (y el query no está vacío), se muestra el diálogo.
+    LaunchedEffect(key1 = active, key2 = searchQuery) {
+        if (!active && searchQuery.isNotBlank() && refaccionesFiltradas.isEmpty()) {
+            showDialog = true
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("No disponible") },
+            text = { Text("¿Desea comprobar disponibilidad entre talleres?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    // Aquí puedes agregar la acción para comprobar el stock
+                }) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     Column(
@@ -193,7 +231,7 @@ fun SolicitarRefaccionScreen(
                     .fillMaxWidth()
                     .heightIn(max = 200.dp)
             ) {
-                if (searchQuery.isNotEmpty()) {
+                if (searchQuery.isNotEmpty() && refaccionesFiltradas.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -224,25 +262,23 @@ fun SolicitarRefaccionScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        val ubicacionTaller = ubicacionActual ?: LatLng(19.4326, -99.1332)
+        val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(ubicacionTaller, 15f)
+            position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
         }
 
-        // Muestra el mapa con marcador
+        // Muestra el mapa con un marcador que indica la ubicación actual (o por defecto)
         GoogleMap(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
             cameraPositionState = cameraPositionState
         ) {
-            if (ubicacionActual != null) {
-                Marker(
-                    state = MarkerState(position = ubicacionActual),
-                    title = "Ubicación actual",
-                    snippet = "Estás aquí"
-                )
-            }
+            Marker(
+                state = MarkerState(position = markerPosition),
+                title = "Ubicación actual",
+                snippet = "Estás aquí"
+            )
         }
 
         val fechaActual = remember {
