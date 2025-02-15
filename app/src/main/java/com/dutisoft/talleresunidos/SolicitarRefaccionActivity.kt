@@ -259,28 +259,72 @@ fun SolicitarRefaccionScreen(
     }
 
     if (showTallerDialog) {
+        // Se calcula la fecha actual
+        val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+
+// Estados locales para los inputs
+        var vinInput by remember { mutableStateOf("") }
+        var mecanicoInput by remember { mutableStateOf("") }
+        var fechaSolicitud by remember { mutableStateOf(fechaActual) }
+
         AlertDialog(
             onDismissRequest = { showTallerDialog = false },
             title = { Text("Pieza disponible") },
             text = {
-                Text(
-                    buildAnnotatedString {
-                        append("Pieza disponible en: ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(tallerEncontrado)
+                Column {
+                    // Muestra el nombre del taller donde la pieza está disponible
+                    Text(
+                        buildAnnotatedString {
+                            append("Disponible en: ")
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(tallerEncontrado)
+                            }
                         }
-                    }
-                )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Muestra la pieza buscada
+                    Text(text = "Pieza: $searchQuery")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Input para el VIN del vehículo
+                    OutlinedTextField(
+                        value = vinInput,
+                        onValueChange = { vinInput = it },
+                        label = { Text("VIN del vehículo") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Input para el nombre del mecánico
+                    OutlinedTextField(
+                        value = mecanicoInput,
+                        onValueChange = { mecanicoInput = it },
+                        label = { Text("Nombre del mecánico") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Input para la fecha de solicitud (pre-cargado con la fecha actual)
+                    OutlinedTextField(
+                        value = fechaSolicitud,
+                        onValueChange = { fechaSolicitud = it },
+                        label = { Text("Fecha de solicitud") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    Toast.makeText(context, "Solicitud realizada con éxito", Toast.LENGTH_SHORT).show()
-                    showTallerDialog = false
+                    if (vinInput.isNotBlank() && mecanicoInput.isNotBlank() && fechaSolicitud.isNotBlank()) {
+                        Toast.makeText(context, "Solicitud realizada con éxito", Toast.LENGTH_SHORT).show()
+                        showTallerDialog = false
+                    } else {
+                        Toast.makeText(context, "Por favor, complete todos los campos", Toast.LENGTH_SHORT).show()
+                    }
                 }) {
                     Text("Solicitar pieza")
                 }
             }
         )
+
+
     }
 
     // Corrección: se utiliza rememberMarkerState para el marcador del mapa
