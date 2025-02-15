@@ -26,6 +26,8 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.*
@@ -213,12 +215,22 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
         val cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(ubicacionTaller, 15f)
         }
+
+        // Mapa con marcador en la ubicación actual
         GoogleMap(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
             cameraPositionState = cameraPositionState
-        )
+        ) {
+            if (ubicacionActual != null) {
+                Marker(
+                    state = MarkerState(position = ubicacionActual),
+                    title = "Ubicación actual",
+                    snippet = "Estás aquí"
+                )
+            }
+        }
 
         val fechaActual = remember {
             SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
