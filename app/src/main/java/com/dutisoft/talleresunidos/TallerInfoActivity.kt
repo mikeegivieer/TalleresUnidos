@@ -13,6 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TallerInfoActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -80,35 +85,78 @@ class TallerInfoActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(paddingValues)
                             .padding(horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Logo del taller, mostrado en forma circular
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = "Logo del taller",
-                            modifier = Modifier
-                                .size(128.dp)
-                                .clip(CircleShape)  // Aquí se recorta la imagen en forma circular
-                                .padding(4.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                        // Nombre del taller debajo de la imagen
-                        Text(
-                            text = nombre,
-                            style = MaterialTheme.typography.headlineMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        // Datos del taller
-                        Text(
-                            text = "Refacciones en stock: $numRefacciones",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = "Dirección: $direccion",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        // Parte superior: Logo y datos básicos
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // Logo del taller, mostrado en forma circular
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUrl),
+                                contentDescription = "Logo del taller",
+                                modifier = Modifier
+                                    .size(128.dp)
+                                    .clip(CircleShape)
+                                    .padding(4.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Fila con el icono de taller y el nombre
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Work,
+                                    contentDescription = "Taller",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = nombre,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            // Fila con el icono de calendario y la fecha actual
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = "Fecha",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+                                Text(
+                                    text = fechaActual,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                            // Fila con el icono de ubicación y la dirección
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "Dirección",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = direccion,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                            // Refacciones en stock
+                            Text(
+                                text = "Refacciones en stock: $numRefacciones",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                         Divider(
                             modifier = Modifier.padding(vertical = 8.dp),
                             color = MaterialTheme.colorScheme.outlineVariant
@@ -116,11 +164,14 @@ class TallerInfoActivity : ComponentActivity() {
                         // Título de lista
                         Text(
                             text = "Lista de Refacciones",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.align(Alignment.Start)
                         )
-                        // Lista de refacciones en una LazyColumn
+                        // Lista de refacciones (ocupando el espacio restante)
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(refacciones) { refaccion ->
@@ -158,7 +209,6 @@ fun RefaccionItem(refaccion: String) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Texto de la refacción
             Text(
                 text = refaccion,
                 style = MaterialTheme.typography.bodyLarge,
@@ -167,7 +217,6 @@ fun RefaccionItem(refaccion: String) {
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.width(8.dp))
-            // Imagen de placeholder
             Image(
                 painter = rememberAsyncImagePainter("https://via.placeholder.com/64"),
                 contentDescription = "Imagen de refacción",
