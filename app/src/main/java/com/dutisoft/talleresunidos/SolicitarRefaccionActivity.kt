@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -281,7 +282,7 @@ fun SolicitarRefaccionScreen(
     }
 
     // Reordenación de vistas:
-    // Primero: SearchBar, luego el nombre del taller, la fecha, el mapa, el campo de estado y el botón para foto
+    // Primero: SearchBar, luego el nombre del taller, la fecha, el mapa, el menú para el estado y el botón para foto
     val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
@@ -362,15 +363,39 @@ fun SolicitarRefaccionScreen(
                 snippet = "Estás aquí"
             )
         }
-        // Campo de texto para el estado
-        var estado by remember { mutableStateOf("") }
-        OutlinedTextField(
-            value = estado,
-            onValueChange = { estado = it },
-            label = { Text("Estado") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        // Menú desplegable para el estado
+        val opciones = listOf("Instalado", "No instalado")
+        var expanded by remember { mutableStateOf(false) }
+        var estadoSeleccionado by remember { mutableStateOf("") }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = estadoSeleccionado,
+                onValueChange = { estadoSeleccionado = it },
+                readOnly = true,
+                label = { Text("Status") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                opciones.forEach { opcion ->
+                    DropdownMenuItem(
+                        text = { Text(opcion) },
+                        onClick = {
+                            estadoSeleccionado = opcion
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
         // Botón para tomar foto de evidencia
         Button(
             onClick = { /* Lógica para tomar una foto de evidencia */ },
