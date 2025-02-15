@@ -60,6 +60,7 @@ class TallerInfoActivity : ComponentActivity() {
                             onClick = {
                                 val intent = Intent(context, SolicitarRefaccionActivity::class.java).apply {
                                     putExtra("nombreTaller", nombre)
+                                    putExtra("direccion", direccion)
                                 }
                                 context.startActivity(intent)
                             },

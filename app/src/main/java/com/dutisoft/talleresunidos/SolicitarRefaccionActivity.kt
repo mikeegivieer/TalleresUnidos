@@ -6,26 +6,22 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role.Companion.Image
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +41,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 
 class SolicitarRefaccionActivity : ComponentActivity() {
@@ -74,7 +71,9 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        // Obtener valores del intent
         val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
+        val direccion = intent.getStringExtra("direccion") ?: "Sin dirección"
 
         setContent {
             TalleresUnidosTheme {
@@ -94,8 +93,10 @@ class SolicitarRefaccionActivity : ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
+                    // Pasar también la dirección al composable
                     SolicitarRefaccionScreen(
                         nombreTaller = nombreTaller,
+                        direccion = direccion,
                         ubicacionActual = ubicacionActualState.value,
                         modifier = Modifier
                             .padding(innerPadding)
@@ -145,12 +146,14 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 @Composable
 fun SolicitarRefaccionScreen(
     nombreTaller: String,
+    direccion: String,
     ubicacionActual: LatLng? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
 
-    // Listas de refacciones (sin cambios)
+    // Lista de refacciones de motor para autocompletar
     val refacciones = listOf(
         "Bloque del motor",
         "Culata de cilindros",
@@ -203,6 +206,7 @@ fun SolicitarRefaccionScreen(
         "Tapa de motor"
     )
 
+    // Lista de refacciones disponibles a buscar
     val refaccionesDisponibles = listOf(
         "Filtro de aire", "Pastillas de freno", "Bateria", "Aceite de motor", "Bujias",
         "Amortiguadores", "Correa de distribucion", "Radiador", "Alternador", "Lamparas de faro"
@@ -212,18 +216,21 @@ fun SolicitarRefaccionScreen(
     var active by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var showTallerDialog by remember { mutableStateOf(false) }
+    // Variable para guardar el nombre del taller encontrado
     var tallerEncontrado by remember { mutableStateOf("") }
 
     val refaccionesFiltradas = remember(searchQuery) {
         refacciones.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
+    // Se muestra el diálogo si se presionó "Enter" y no se encontraron coincidencias
     LaunchedEffect(key1 = active, key2 = searchQuery) {
         if (!active && searchQuery.isNotBlank() && refaccionesFiltradas.isEmpty()) {
             showConfirmDialog = true
         }
     }
 
+    // Primer diálogo: preguntar si se desea comprobar disponibilidad en otros talleres
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
@@ -232,13 +239,16 @@ fun SolicitarRefaccionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showConfirmDialog = false
+                    // Buscar la refacción en la lista de disponibles
                     val foundIndex = refaccionesDisponibles.indexOfFirst { it.equals(searchQuery, ignoreCase = true) }
                     if (foundIndex != -1) {
+                        // Usamos 1-indexación para determinar la posición
                         val piezaPos = foundIndex + 1
+                        // Buscar el primer taller que tenga refacciones disponibles
                         val taller = TallerRepository.talleres.firstOrNull { piezaPos <= it.numRefacciones }
                         if (taller != null) {
                             tallerEncontrado = taller.nombre
-                            showTallerDialog = true
+                            showTallerDialog = true // Mostrar el diálogo con el nombre del taller
                         }
                     }
                 }) {
@@ -253,6 +263,7 @@ fun SolicitarRefaccionScreen(
         )
     }
 
+    // Segundo diálogo: muestra el nombre del taller en negrita y botón "Solicitar pieza"
     if (showTallerDialog) {
         AlertDialog(
             onDismissRequest = { showTallerDialog = false },
@@ -278,37 +289,9 @@ fun SolicitarRefaccionScreen(
         )
     }
 
-    // Variables para el menú desplegable de status
-    val opciones = listOf("Instalado", "No instalado")
-    var expanded by remember { mutableStateOf(false) }
-    var estadoSeleccionado by remember { mutableStateOf("") }
-
-    // Variables para la cámara y la imagen capturada
-    var capturedImage by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-
-    // Launcher para tomar foto (obtiene un Bitmap pequeño)
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-        onResult = { bitmap ->
-            if (bitmap != null) {
-                capturedImage = bitmap
-            }
-        }
-    )
-
-    // Launcher para solicitar permiso de cámara
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted ->
-            if (granted) {
-                cameraLauncher.launch()
-            } else {
-                Toast.makeText(context, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
-            }
-        }
-    )
-
-    // Posición del mapa y fecha actual
+    // Reordenación de vistas:
+    // Primero: SearchBar, luego el nombre del taller, la fecha, la dirección, el mapa,
+    // el menú para el estado, el botón para tomar foto y, al final, el botón inferior "Solicitar"
     val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
@@ -376,6 +359,11 @@ fun SolicitarRefaccionScreen(
             text = "Fecha: $fechaActual",
             fontSize = 18.sp
         )
+        // Dirección (tomada del intent)
+        Text(
+            text = "Direccion: $direccion",
+            fontSize = 18.sp
+        )
         // Mapa con la ubicación
         GoogleMap(
             modifier = Modifier
@@ -389,7 +377,10 @@ fun SolicitarRefaccionScreen(
                 snippet = "Estás aquí"
             )
         }
-        // Menú desplegable para el status
+        // Menú desplegable para el estado
+        val opciones = listOf("Instalado", "No instalado")
+        var expanded by remember { mutableStateOf(false) }
+        var estadoSeleccionado by remember { mutableStateOf("") }
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -398,7 +389,7 @@ fun SolicitarRefaccionScreen(
                 value = estadoSeleccionado,
                 onValueChange = { estadoSeleccionado = it },
                 readOnly = true,
-                label = { Text("Status") },
+                label = { Text("Nueva instalación") },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
@@ -419,38 +410,27 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
-        // Se muestra la imagen capturada (si existe)
-        capturedImage?.let { bitmap ->
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Foto de evidencia",
-                modifier = Modifier
-                    .size(200.dp)
-                    .padding(vertical = 8.dp)
-            )
+        // Botón para tomar foto de evidencia
+        Button(
+            onClick = { /* Lógica para tomar una foto de evidencia */ },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text("Tomar foto de evidencia")
         }
-        // Botón para tomar foto de evidencia (solo se muestra si aún no se ha tomado la foto)
-        if (capturedImage == null) {
-            Button(
-                onClick = {
-                    // Verifica si se cuenta con el permiso de cámara
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.CAMERA
-                        ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    } else {
-                        cameraLauncher.launch()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                Text("Tomar foto de evidencia")
-            }
+        // Botón inferior "Solicitar" en color verde
+        Button(
+            onClick = {
+                Toast.makeText(context, "Solicitud realizada con éxito", Toast.LENGTH_SHORT).show()
+                activity?.finish()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text("Solicitar", color = Color.White)
         }
     }
 }
-
