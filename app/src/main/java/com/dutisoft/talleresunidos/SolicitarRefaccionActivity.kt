@@ -6,9 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,11 +39,9 @@ class SolicitarRefaccionActivity : ComponentActivity() {
     ) { permissions ->
         when {
             permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
-                // Permiso concedido, obtener la ubicación
                 obtenerUbicacionActual()
             }
             permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
-                // Permiso concedido, obtener la ubicación
                 obtenerUbicacionActual()
             }
             else -> {
@@ -54,12 +55,10 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Obtener el nombre del taller del Intent
-        val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
-
-        // Usar Jetpack Compose para la interfaz de usuario
         setContent {
             TalleresUnidosTheme {
+                val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -69,7 +68,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
             }
         }
 
-        // Solicitar permisos de ubicación
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -101,7 +99,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
             .addOnSuccessListener { location ->
                 if (location != null) {
                     val ubicacionActual = LatLng(location.latitude, location.longitude)
-                    // Actualizar el estado con la ubicación actual
                     setContent {
                         TalleresUnidosTheme {
                             Surface(
@@ -116,7 +113,7 @@ class SolicitarRefaccionActivity : ComponentActivity() {
             }
     }
 }
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = null) {
     val refacciones = listOf(
@@ -132,13 +129,20 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
         "Lámparas de faro"
     )
 
+    var searchQuery by remember { mutableStateOf("") }
+    var active by remember { mutableStateOf(false) } // Estado para controlar si el SearchBar está activo
+    val refaccionesFiltradas = remember(searchQuery) {
+        refacciones.filter {
+            it.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Título "Solicitar refacción"
         Text(
             text = "Solicitar refacción",
             fontSize = 24.sp,
@@ -146,42 +150,66 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
-        // Input para la pieza
-        var pieza by remember { mutableStateOf("") }
-        OutlinedTextField(
-            value = pieza,
-            onValueChange = { pieza = it },
-            label = { Text("Pieza") },
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = {
+                searchQuery = it
+                active = true // Activar el SearchBar cuando se escribe
+            },
+            onSearch = {
+                active = false // Desactivar el SearchBar al realizar la búsqueda
+            },
+            active = active, // Controlar si el SearchBar está activo
+            onActiveChange = {
+                active = it // Actualizar el estado de activación
+            },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Filtrar la lista de refacciones basado en el input
-        val refaccionesFiltradas = refacciones.filter { it.contains(pieza, ignoreCase = true) }
-
-        // Mostrar los resultados filtrados
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(refaccionesFiltradas) { refaccion ->
-                Text(
-                    text = refaccion,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+            placeholder = { Text("Batería, Amortiguador...") }, // Placeholder
+            leadingIcon = { // Icono de búsqueda
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Buscar"
                 )
+            }
+        ) {
+            // Limitar la altura del área de resultados
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 200.dp) // Altura máxima del área de resultados
+            ) {
+                // Mostrar resultados de búsqueda
+                if (searchQuery.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(refaccionesFiltradas) { refaccion ->
+                            Text(
+                                text = refaccion,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        searchQuery = refaccion // Seleccionar la pieza
+                                        active = false // Desactivar el SearchBar después de seleccionar
+                                    }
+                                    .padding(8.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        // Nombre del taller
         Text(
             text = "Taller: $nombreTaller",
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        // Mapa de Google Maps
-        val ubicacionTaller = ubicacionActual ?: LatLng(19.4326, -99.1332) // Ejemplo: Ciudad de México
+        val ubicacionTaller = ubicacionActual ?: LatLng(19.4326, -99.1332)
         val cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(ubicacionTaller, 15f)
         }
@@ -192,7 +220,6 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             cameraPositionState = cameraPositionState
         )
 
-        // Fecha actual
         val fechaActual = remember {
             SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
         }
@@ -202,7 +229,6 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        // Input para el estado
         var estado by remember { mutableStateOf("") }
         OutlinedTextField(
             value = estado,
@@ -212,7 +238,6 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             singleLine = true
         )
 
-        // Botón para tomar una foto de evidencia
         Button(
             onClick = { /* Lógica para tomar una foto */ },
             modifier = Modifier

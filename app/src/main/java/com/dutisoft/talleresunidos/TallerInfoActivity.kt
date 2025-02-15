@@ -2,6 +2,7 @@ package com.dutisoft.talleresunidos
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -36,7 +37,7 @@ class TallerInfoActivity : ComponentActivity() {
                     floatingActionButton = {
                         FloatingActionButton(
                             onClick = {
-                                val intent = Intent(this@TallerInfoActivity, SolicitarRefaccionActivity::class.java).apply {
+                                val intent = Intent(this, SolicitarRefaccionActivity::class.java).apply {
                                     putExtra("nombreTaller", nombre)
                                 }
                                 startActivity(intent)
