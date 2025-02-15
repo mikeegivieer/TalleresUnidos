@@ -48,6 +48,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation ("androidx.compose.material3:material3:1.2.0")
+    implementation ("androidx.compose.material:material-icons-extended:1.4.0")
     implementation ("io.coil-kt:coil-compose:2.4.0")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
     implementation ("com.google.maps.android:maps-compose:2.11.4")

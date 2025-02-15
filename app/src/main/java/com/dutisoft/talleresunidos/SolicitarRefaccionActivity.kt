@@ -14,14 +14,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -41,8 +42,6 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.*
-
-
 
 class SolicitarRefaccionActivity : ComponentActivity() {
 
@@ -349,6 +348,8 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
+        // Mayor espacio entre la SearchBar y el nombre del taller
+        Spacer(modifier = Modifier.height(32.dp))
         // Nombre del taller
         Text(
             text = "Taller: $nombreTaller",
@@ -410,14 +411,18 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
-        // Botón para tomar foto de evidencia
+        // Botón para tomar foto de evidencia con icono de cámara
         Button(
             onClick = { /* Lógica para tomar una foto de evidencia */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
-            Text("Tomar foto de evidencia")
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Tomar foto de evidencia",
+                tint = Color.White
+            )
         }
         // Botón inferior "Solicitar" en color verde
         Button(
