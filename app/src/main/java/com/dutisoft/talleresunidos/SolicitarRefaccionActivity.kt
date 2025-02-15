@@ -2,12 +2,16 @@ package com.dutisoft.talleresunidos
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -153,6 +158,29 @@ fun SolicitarRefaccionScreen(
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
+
+    // Estados para la foto de evidencia
+    var capturedImage by remember { mutableStateOf<Bitmap?>(null) }
+
+    // Launcher para tomar foto (usando TakePicturePreview para obtener un Bitmap)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            capturedImage = bitmap
+        }
+    }
+
+    // Launcher para solicitar permiso de cámara
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraLauncher.launch()
+        } else {
+            Toast.makeText(context, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Lista de refacciones de motor para autocompletar
     val refacciones = listOf(
@@ -459,18 +487,45 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
-        // Botón para tomar foto de evidencia con ícono de cámara
-        Button(
-            onClick = { /* Lógica para tomar foto de evidencia */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.CameraAlt,
-                contentDescription = "Tomar foto de evidencia",
-                tint = Color.White
+        // Se muestra la imagen tomada si existe, de lo contrario se muestra el botón para tomar foto
+        if (capturedImage != null) {
+            // Mostrar la imagen capturada
+            Image(
+                bitmap = capturedImage!!.asImageBitmap(),
+                contentDescription = "Foto de evidencia",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clickable {
+                        // Opcional: permitir retomar foto al pulsar sobre la imagen
+                        capturedImage = null
+                    }
             )
+        } else {
+            // Botón para tomar foto de evidencia con ícono de cámara
+            Button(
+                onClick = {
+                    // Verificar si el permiso de cámara ya está concedido
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        cameraLauncher.launch()
+                    } else {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = "Tomar foto de evidencia",
+                    tint = Color.White
+                )
+            }
         }
         // Botón inferior "Solicitar" en color verde
         Button(
