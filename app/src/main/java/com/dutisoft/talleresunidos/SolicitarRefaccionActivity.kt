@@ -254,7 +254,7 @@ fun SolicitarRefaccionScreen(
         )
     }
 
-    // Segundo diálogo: muestra el nombre del taller con el nombre en negrita y botón "Solicitar pieza"
+    // Segundo diálogo: muestra el nombre del taller en negrita y botón "Solicitar pieza"
     if (showTallerDialog) {
         AlertDialog(
             onDismissRequest = { showTallerDialog = false },
@@ -279,6 +279,14 @@ fun SolicitarRefaccionScreen(
             }
         )
     }
+
+    // Reordenación de vistas:
+    // Primero: SearchBar, luego el nombre del taller, la fecha, el mapa, el campo de estado y el botón para foto
+    val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
+    }
+    val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -331,17 +339,17 @@ fun SolicitarRefaccionScreen(
                 }
             }
         }
-
+        // Nombre del taller
         Text(
             text = "Taller: $nombreTaller",
             fontSize = 18.sp
         )
-
-        val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
-        val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(markerPosition, 15f)
-        }
-
+        // Fecha actual
+        Text(
+            text = "Fecha: $fechaActual",
+            fontSize = 18.sp
+        )
+        // Mapa con la ubicación
         GoogleMap(
             modifier = Modifier
                 .fillMaxWidth()
@@ -354,15 +362,7 @@ fun SolicitarRefaccionScreen(
                 snippet = "Estás aquí"
             )
         }
-
-        val fechaActual = remember {
-            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-        }
-        Text(
-            text = "Fecha: $fechaActual",
-            fontSize = 18.sp
-        )
-
+        // Campo de texto para el estado
         var estado by remember { mutableStateOf("") }
         OutlinedTextField(
             value = estado,
@@ -371,7 +371,7 @@ fun SolicitarRefaccionScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
-
+        // Botón para tomar foto de evidencia
         Button(
             onClick = { /* Lógica para tomar una foto de evidencia */ },
             modifier = Modifier
