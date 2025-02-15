@@ -262,7 +262,7 @@ fun SolicitarRefaccionScreen(
         // Se calcula la fecha actual
         val fechaActual = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
 
-// Estados locales para los inputs
+        // Estados locales para los inputs
         var vinInput by remember { mutableStateOf("") }
         var mecanicoInput by remember { mutableStateOf("") }
         var fechaSolicitud by remember { mutableStateOf(fechaActual) }
@@ -323,11 +323,9 @@ fun SolicitarRefaccionScreen(
                 }
             }
         )
-
-
     }
 
-    // Corrección: se utiliza rememberMarkerState para el marcador del mapa
+    // Configuración del mapa
     val markerPosition = ubicacionActual ?: LatLng(19.4326, -99.1332)
     val markerState = rememberMarkerState(position = markerPosition)
     val cameraPositionState = rememberCameraPositionState {
@@ -340,7 +338,7 @@ fun SolicitarRefaccionScreen(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // SearchBar
+        // SearchBar con la lista de sugerencias
         SearchBar(
             query = searchQuery,
             onQueryChange = {
@@ -358,7 +356,23 @@ fun SolicitarRefaccionScreen(
                     contentDescription = "Buscar"
                 )
             },
-            content = {}
+            content = {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(refaccionesFiltradas) { refaccion ->
+                        ListItem(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    searchQuery = refaccion
+                                    active = false
+                                },
+                            headlineContent = { Text(refaccion) }
+                        )
+                    }
+                }
+            }
         )
         // Fila para el nombre del taller (sólo icono y valor)
         Row(
