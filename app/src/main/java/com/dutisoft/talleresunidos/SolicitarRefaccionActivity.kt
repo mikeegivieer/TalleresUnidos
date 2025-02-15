@@ -1,16 +1,20 @@
 package com.dutisoft.talleresunidos
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,10 +38,9 @@ import java.util.*
 
 class SolicitarRefaccionActivity : ComponentActivity() {
 
-    // Cliente para obtener la ubicación
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    // Estado mutable para almacenar la ubicación actual (inicialmente nula)
+    // Estado mutable para almacenar la ubicación actual
     private val ubicacionActualState = mutableStateOf<LatLng?>(null)
 
     // Solicitud de permisos
@@ -57,6 +60,7 @@ class SolicitarRefaccionActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -65,13 +69,34 @@ class SolicitarRefaccionActivity : ComponentActivity() {
         // Obtén el nombre del taller del intent
         val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
 
-        // Configura la UI una sola vez
+        // Configura la UI una sola vez con un TopAppBar que incluye la flecha de retroceso
         setContent {
             TalleresUnidosTheme {
-                SolicitarRefaccionScreen(
-                    nombreTaller = nombreTaller,
-                    ubicacionActual = ubicacionActualState.value
-                )
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { Text("Solicitar Refacción") },
+                            navigationIcon = {
+                                // Usamos LocalActivity en lugar de convertir el contexto
+                                val activity = LocalActivity.current
+                                IconButton(onClick = { activity?.finish() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBack,
+                                        contentDescription = "Volver"
+                                    )
+                                }
+                            }
+                        )
+                    }
+                ) { innerPadding ->
+                    SolicitarRefaccionScreen(
+                        nombreTaller = nombreTaller,
+                        ubicacionActual = ubicacionActualState.value,
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .padding(16.dp)
+                    )
+                }
             }
         }
 
@@ -93,7 +118,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
     }
 
     private fun obtenerUbicacionActual() {
-        // Verifica permisos antes de continuar
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -107,7 +131,6 @@ class SolicitarRefaccionActivity : ComponentActivity() {
         }
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             if (location != null) {
-                // Actualiza el estado de la ubicación para que la UI se recomponda
                 ubicacionActualState.value = LatLng(location.latitude, location.longitude)
             }
         }
@@ -116,7 +139,11 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = null) {
+fun SolicitarRefaccionScreen(
+    nombreTaller: String,
+    ubicacionActual: LatLng? = null,
+    modifier: Modifier = Modifier
+) {
     // Lista de refacciones
     val refacciones = listOf(
         "Filtro de aire",
@@ -138,19 +165,11 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Solicitar refacción",
-            fontSize = 24.sp,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        // SearchBar con su bloque de contenido para mostrar resultados
+        // SearchBar para buscar refacciones
         SearchBar(
             query = searchQuery,
             onQueryChange = {
@@ -169,7 +188,6 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
                 )
             }
         ) {
-            // Aquí se muestran los resultados de búsqueda dentro de un área limitada en altura
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -199,6 +217,7 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             }
         }
 
+        // Información del taller
         Text(
             text = "Taller: $nombreTaller",
             fontSize = 18.sp,

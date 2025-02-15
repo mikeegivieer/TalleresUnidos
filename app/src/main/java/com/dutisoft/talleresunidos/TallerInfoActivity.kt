@@ -2,19 +2,26 @@ package com.dutisoft.talleresunidos
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -22,64 +29,101 @@ import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
 import kotlin.random.Random
 
 class TallerInfoActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             TalleresUnidosTheme {
-                val nombre = intent.getStringExtra("nombre") ?: ""
-                val direccion = intent.getStringExtra("direccion")
+                // Obtén datos del intent con valores por defecto
+                val nombre = intent.getStringExtra("nombre") ?: "Sin Nombre"
+                val direccion = intent.getStringExtra("direccion") ?: "Dirección no disponible"
                 val numRefacciones = intent.getIntExtra("numRefacciones", 0)
-                val imageUrl = intent.getStringExtra("imageUrl")
+                val imageUrl = intent.getStringExtra("imageUrl") ?: ""
                 val refacciones = generarRefaccionesAleatorias(numRefacciones)
-                val snackbarHostState = remember { SnackbarHostState() }
+                val context = LocalContext.current
 
                 Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { Text("Información del Taller") },
+                            navigationIcon = {
+                                IconButton(onClick = { finish() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBack,
+                                        contentDescription = "Volver"
+                                    )
+                                }
+                            }
+                        )
+                    },
                     floatingActionButton = {
                         FloatingActionButton(
                             onClick = {
-                                val intent = Intent(this, SolicitarRefaccionActivity::class.java).apply {
+                                val intent = Intent(context, SolicitarRefaccionActivity::class.java).apply {
                                     putExtra("nombreTaller", nombre)
                                 }
-                                startActivity(intent)
+                                context.startActivity(intent)
                             },
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
                         ) {
-                            Text(text = "+", fontSize = 24.sp, color = MaterialTheme.colorScheme.onPrimary)
+                            Text(
+                                text = "+",
+                                fontSize = 24.sp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
-                    },
-                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                    }
                 ) { paddingValues ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
-                            .padding(paddingValues),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = nombre,
-                            fontSize = 24.sp,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        // Logo del taller, ahora circular
                         Image(
                             painter = rememberAsyncImagePainter(imageUrl),
                             contentDescription = "Logo del taller",
-                            modifier = Modifier.size(128.dp),
-                            contentScale = ContentScale.Fit
+                            modifier = Modifier
+                                .size(128.dp)
+                                .clip(CircleShape)
+                                .padding(4.dp),
+                            contentScale = ContentScale.Crop
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(text = "Refacciones en stock: $numRefacciones", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = "Dirección: $direccion", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        // Nombre del taller (ahora debajo de la imagen)
                         Text(
-                            text = "Lista de Refacciones:",
-                            fontSize = 20.sp,
-                            style = MaterialTheme.typography.headlineSmall
+                            text = nombre,
+                            style = MaterialTheme.typography.headlineMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        // Datos del taller
+                        Text(
+                            text = "Refacciones en stock: $numRefacciones",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Dirección: $direccion",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Divider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                        // Título de lista
+                        Text(
+                            text = "Lista de Refacciones",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        // Lista de refacciones en una LazyColumn
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             items(refacciones) { refaccion ->
                                 RefaccionItem(refaccion)
                             }
@@ -103,10 +147,11 @@ class TallerInfoActivity : ComponentActivity() {
 
 @Composable
 fun RefaccionItem(refaccion: String) {
-    Card(
+    // Tarjeta elevada para cada refacción
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(horizontal = 4.dp),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -114,18 +159,21 @@ fun RefaccionItem(refaccion: String) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = refaccion,
-                    fontSize = 18.sp,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
+            // Texto de la refacción
+            Text(
+                text = refaccion,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            // Imagen de placeholder
             Image(
                 painter = rememberAsyncImagePainter("https://via.placeholder.com/64"),
                 contentDescription = "Imagen de refacción",
                 modifier = Modifier.size(64.dp),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Crop
             )
         }
     }

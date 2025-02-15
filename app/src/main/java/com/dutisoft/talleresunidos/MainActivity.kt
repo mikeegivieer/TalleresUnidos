@@ -6,63 +6,38 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
+import androidx.compose.material3.CenterAlignedTopAppBar
+
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
+import com.dutisoft.talleresunidos.ui.theme.TalleresUnidosTheme
 import kotlin.random.Random
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TalleresUnidosTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { /* Acción del FAB */ },
-                            shape = CircleShape
-                        ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = "Agregar taller")
-                        }
-                    }
-                ) { innerPadding ->
-                    TalleresScreen(modifier = Modifier.padding(innerPadding)) { taller ->
-                        val intent = Intent(this, TallerInfoActivity::class.java).apply {
-                            putExtra("nombre", taller.nombre)
-                            putExtra("direccion", taller.direccion)
-                            putExtra("numRefacciones", taller.numRefacciones)
-                            putExtra("imageUrl", taller.imageUrl)
-                        }
-                        startActivity(intent)
-                    }
-                }
-            }
-        }
-    }
-}
-data class Taller(val nombre: String, val direccion: String, val numRefacciones: Int, val imageUrl: String)
+
+data class Taller(
+    val nombre: String,
+    val direccion: String,
+    val numRefacciones: Int,
+    val imageUrl: String
+)
 
 fun generarTalleres(): List<Taller> {
     val nombres = listOf(
         "Mecánica Rápida Express",
-        "Motores y Más Taller",
+        "Motores y Más",
         "Carrocería Perfecta",
         "Taller TurboFix",
         "Frenos y Suspensión Pro"
@@ -89,42 +64,100 @@ fun generarTalleres(): List<Taller> {
 
 @Composable
 fun TalleresScreen(modifier: Modifier = Modifier, onTallerClick: (Taller) -> Unit) {
-    Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Talleres Unidos",
-            fontSize = 24.sp,
-            modifier = Modifier.padding(16.dp)
-        )
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(generarTalleres()) { taller ->
-                TallerItem(taller, onTallerClick)
-            }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(generarTalleres()) { taller ->
+            TallerItem(taller, onTallerClick)
         }
     }
 }
 
 @Composable
 fun TallerItem(taller: Taller, onClick: (Taller) -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onClick(taller) }
+    ElevatedCard(
+        onClick = { onClick(taller) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = taller.nombre, fontSize = 18.sp, style = MaterialTheme.typography.headlineMedium)
-                Text(text = "Refacciones en stock: ${taller.numRefacciones}", fontSize = 14.sp)
-                Text(text = "Dirección: ${taller.direccion}", fontSize = 14.sp)
+                Text(
+                    text = taller.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Refacciones en stock: ${taller.numRefacciones}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Dirección: ${taller.direccion}",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            // Imagen del taller con forma circular
             Image(
                 painter = rememberAsyncImagePainter(taller.imageUrl),
                 contentDescription = "Logo del taller",
-                modifier = Modifier.size(64.dp),
-                contentScale = ContentScale.Fit
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .padding(4.dp),
+                contentScale = ContentScale.Crop
             )
         }
     }
 }
 
+class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            TalleresUnidosTheme {
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { Text("Talleres Unidos") }
+                        )
+                    }
+                ) { innerPadding ->
+                    TalleresScreen(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .padding(horizontal = 16.dp)
+                    ) { taller ->
+                        val intent = Intent(this, TallerInfoActivity::class.java).apply {
+                            putExtra("nombre", taller.nombre)
+                            putExtra("direccion", taller.direccion)
+                            putExtra("numRefacciones", taller.numRefacciones)
+                            putExtra("imageUrl", taller.imageUrl)
+                        }
+                        startActivity(intent)
+                    }
+                }
+            }
+        }
+    }
+}
 
+@Preview(showBackground = true)
+@Composable
+fun TalleresScreenPreview() {
+    TalleresUnidosTheme {
+        TalleresScreen { }
+    }
+}
