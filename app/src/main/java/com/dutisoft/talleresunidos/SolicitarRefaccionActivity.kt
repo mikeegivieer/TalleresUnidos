@@ -34,8 +34,13 @@ import java.util.*
 
 class SolicitarRefaccionActivity : ComponentActivity() {
 
+    // Cliente para obtener la ubicación
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    // Estado mutable para almacenar la ubicación actual (inicialmente nula)
+    private val ubicacionActualState = mutableStateOf<LatLng?>(null)
+
+    // Solicitud de permisos
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -47,7 +52,7 @@ class SolicitarRefaccionActivity : ComponentActivity() {
                 obtenerUbicacionActual()
             }
             else -> {
-                // Permiso denegado, manejar el caso
+                // Permiso denegado, manejar el caso según se requiera
             }
         }
     }
@@ -57,19 +62,20 @@ class SolicitarRefaccionActivity : ComponentActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        // Obtén el nombre del taller del intent
+        val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
+
+        // Configura la UI una sola vez
         setContent {
             TalleresUnidosTheme {
-                val nombreTaller = intent.getStringExtra("nombreTaller") ?: "Taller Desconocido"
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    SolicitarRefaccionScreen(nombreTaller = nombreTaller)
-                }
+                SolicitarRefaccionScreen(
+                    nombreTaller = nombreTaller,
+                    ubicacionActual = ubicacionActualState.value
+                )
             }
         }
 
+        // Solicitar permisos o, si ya están concedidos, obtener la ubicación
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -87,37 +93,31 @@ class SolicitarRefaccionActivity : ComponentActivity() {
     }
 
     private fun obtenerUbicacionActual() {
+        // Verifica permisos antes de continuar
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
-                if (location != null) {
-                    val ubicacionActual = LatLng(location.latitude, location.longitude)
-                    setContent {
-                        TalleresUnidosTheme {
-                            Surface(
-                                modifier = Modifier.fillMaxSize(),
-                                color = MaterialTheme.colorScheme.background
-                            ) {
-                                SolicitarRefaccionScreen(nombreTaller = "Taller Desconocido", ubicacionActual = ubicacionActual)
-                            }
-                        }
-                    }
-                }
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                // Actualiza el estado de la ubicación para que la UI se recomponda
+                ubicacionActualState.value = LatLng(location.latitude, location.longitude)
             }
+        }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = null) {
+    // Lista de refacciones
     val refacciones = listOf(
         "Filtro de aire",
         "Pastillas de freno",
@@ -132,11 +132,9 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
     )
 
     var searchQuery by remember { mutableStateOf("") }
-    var active by remember { mutableStateOf(false) } // Estado para controlar si el SearchBar está activo
+    var active by remember { mutableStateOf(false) }
     val refaccionesFiltradas = remember(searchQuery) {
-        refacciones.filter {
-            it.contains(searchQuery, ignoreCase = true)
-        }
+        refacciones.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
     Column(
@@ -152,35 +150,31 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
+        // SearchBar con su bloque de contenido para mostrar resultados
         SearchBar(
             query = searchQuery,
             onQueryChange = {
                 searchQuery = it
-                active = true // Activar el SearchBar cuando se escribe
+                active = true
             },
-            onSearch = {
-                active = false // Desactivar el SearchBar al realizar la búsqueda
-            },
-            active = active, // Controlar si el SearchBar está activo
-            onActiveChange = {
-                active = it // Actualizar el estado de activación
-            },
+            onSearch = { active = false },
+            active = active,
+            onActiveChange = { active = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Batería, Amortiguador...") }, // Placeholder
-            leadingIcon = { // Icono de búsqueda
+            placeholder = { Text("Batería, Amortiguador...") },
+            leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Buscar"
                 )
             }
         ) {
-            // Limitar la altura del área de resultados
+            // Aquí se muestran los resultados de búsqueda dentro de un área limitada en altura
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 200.dp) // Altura máxima del área de resultados
+                    .heightIn(max = 200.dp)
             ) {
-                // Mostrar resultados de búsqueda
                 if (searchQuery.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
@@ -194,8 +188,8 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        searchQuery = refaccion // Seleccionar la pieza
-                                        active = false // Desactivar el SearchBar después de seleccionar
+                                        searchQuery = refaccion
+                                        active = false
                                     }
                                     .padding(8.dp)
                             )
@@ -216,7 +210,7 @@ fun SolicitarRefaccionScreen(nombreTaller: String, ubicacionActual: LatLng? = nu
             position = CameraPosition.fromLatLngZoom(ubicacionTaller, 15f)
         }
 
-        // Mapa con marcador en la ubicación actual
+        // Muestra el mapa con marcador
         GoogleMap(
             modifier = Modifier
                 .fillMaxWidth()
