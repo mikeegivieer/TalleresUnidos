@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -428,6 +429,13 @@ fun SolicitarRefaccionScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = fechaActual, fontSize = 18.sp)
         }
+        // Texto centrado para la pieza solicitada
+        Text(
+            text = "Pieza solicitada: ${if (searchQuery.isBlank()) "Ninguna" else searchQuery}",
+            fontSize = 18.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Left
+        )
         // Fila para la dirección (sólo icono y valor)
         Row(
             modifier = Modifier.fillMaxWidth(),
