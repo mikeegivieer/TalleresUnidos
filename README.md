@@ -2,6 +2,16 @@
 
 Talleres Unidos es una aplicación móvil desarrollada para coordinar la solicitud, envío y registro de la instalación de refacciones entre talleres mecánicos. La solución está diseñada para optimizar tiempos de respuesta y asegurar la trazabilidad de las piezas, facilitando la colaboración entre una red de talleres que comparten refacciones y piezas para la reparación de vehículos.
 
+## Vista Previa de la Aplicación
+
+A continuación, se muestran algunos flujos de la aplicación en funcionamiento:
+
+### Solicitud de refacción
+![Flujo de Instalación](flow1.gif)
+
+### Flujo 2: Solicitud de Refacción entre talleres
+![Flujo de Solicitud](flow2.gif)
+
 ## Objetivos del Proyecto
 
 - **Registro de Instalación**: Permitir que el taller solicitante registre la instalación de la refacción, incluyendo:
@@ -75,4 +85,3 @@ El proyecto se compone principalmente de tres actividades:
 ## Conclusión
 
 Talleres Unidos es una solución integral para la gestión de refacciones entre talleres, facilitando tanto el registro de instalaciones como la solicitud de piezas en situaciones de baja disponibilidad. Con un diseño moderno y el uso de tecnologías actuales (como Jetpack Compose y Material3), la aplicación mejora la eficiencia operativa y la trazabilidad en la reparación de vehículos.
-
