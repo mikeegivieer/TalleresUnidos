@@ -12,11 +12,18 @@ Puedes descargar la última versión de la aplicación en el siguiente enlace:
 
 A continuación, se muestran algunos flujos de la aplicación en funcionamiento:
 
-### Solicitud de refacción
-![Solicitud de_refaccion](flow1.gif)
-
-### Flujo 2: Solicitud de Refacción entre talleres
-![Solicitud_de refaccion_entre_talleres](flow2.gif)
+```html
+<div style="display: flex; gap: 10px;">
+    <div>
+        <p><strong>Solicitud de refacción</strong></p>
+        <img src="flow1.gif" alt="Solicitud de refacción" style="width: 300px;">
+    </div>
+    <div>
+        <p><strong>Solicitud de Refacción entre talleres</strong></p>
+        <img src="flow2.gif" alt="Solicitud de refacción entre talleres" style="width: 300px;">
+    </div>
+</div>
+```
 
 ## Objetivos del Proyecto
 
